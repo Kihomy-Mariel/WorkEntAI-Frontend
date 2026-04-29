@@ -6,7 +6,7 @@
     "set-env": "node scripts/set-env.js",
     "start": "npm run set-env && ng serve",
     "build": "npm run set-env && ng build",
-    "build:prod": "NODE_ENV=production node scripts/set-env.js && ng build --configuration production",
+    "build:prod": "cross-env NODE_ENV=production node scripts/set-env.js && ng build --configuration production",
     "watch": "npm run set-env && ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -31,6 +31,7 @@
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",
     "@types/sockjs-client": "^1.5.4",
+    "cross-env": "^7.0.3",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",

@@ -1,0 +1,33 @@
+name: Deploy Frontend to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Create .env for build
+        run: |
+          cat <<EOF > .env
+          API_URL=${{ secrets.API_URL }}
+          WS_URL=${{ secrets.WS_URL }}
+          EOF
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: frontend-app
+          region: us-central1
+          source: .
+          flags: --allow-unauthenticated
