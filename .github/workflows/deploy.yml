@@ -1,4 +1,4 @@
-name: Deploy Frontend to Cloud Run
+name: Deploy Frontend to Netlify
 
 on:
   push:
@@ -12,22 +12,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Create .env for build
-        run: |
-          cat <<EOF > .env
-          API_URL=${{ secrets.API_URL }}
-          WS_URL=${{ secrets.WS_URL }}
-          EOF
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
+      - name: Build production
+        env:
+          NODE_ENV: production
+          API_URL: ${{ secrets.API_URL }}
+          WS_URL: ${{ secrets.WS_URL }}
+        run: npm run build:prod
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3
         with:
-          service: frontend-app
-          region: us-central1
-          source: .
-          flags: --allow-unauthenticated
+          publish-dir: './dist/frontend/browser'
+          production-branch: main
+          production-deploy: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions — ${{ github.sha }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

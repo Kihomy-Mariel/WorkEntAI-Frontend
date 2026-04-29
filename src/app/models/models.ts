@@ -100,6 +100,7 @@ export interface Tarea {
   numeroReferenciaTramite?: string;
   nombrePolitica?: string;
   instrucciones?: string;
+  camposFormulario?: CampoFormulario[];
   estado: 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'RECHAZADO';
   formularioDatos: { [key: string]: any };
   observacion?: string;

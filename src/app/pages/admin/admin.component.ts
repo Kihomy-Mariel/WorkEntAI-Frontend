@@ -9,7 +9,7 @@ import { TramiteService } from '../../services/tramite/tramite.service';
 import { AIService } from '../../services/ai/ai.service';
 import { NotificacionService } from '../../services/notificacion/notificacion.service';
 import { WebSocketService } from '../../services/websocket/websocket.service';
-import { Politica, Tramite, Notificacion } from '../../models/models';
+import { Politica, Tramite, Notificacion, Nodo } from '../../models/models';
 
 export interface Toast {
   id: number;
@@ -103,6 +103,9 @@ export interface AIResult {
             <div class="section-card">
               <div class="section-header">
                 <h2 class="section-title">📋 Políticas de Flujo</h2>
+                <button class="btn-sm btn-primary-sm" (click)="router.navigate(['/editor'])">
+                  ✏️ Nueva Política
+                </button>
               </div>
               @if (politicas.length === 0) {
                 <p class="empty-msg">No hay políticas registradas.</p>
@@ -132,6 +135,12 @@ export interface AIResult {
                           <td>{{ p.fechaCreacion | date:'dd/MM/yyyy' }}</td>
                           <td>
                             <div class="action-btns">
+                              <button class="btn-sm btn-view" (click)="verDiagrama(p)" title="Ver diagrama guardado">
+                                👁️ Ver
+                              </button>
+                              <button class="btn-sm btn-edit" (click)="router.navigate(['/editor', p.id])" title="Editar en el editor">
+                                ✏️ Editar
+                              </button>
                               @if (p.estado !== 'ACTIVA') {
                                 <button class="btn-sm btn-success" (click)="activarPolitica(p.id, p.nombre)"
                                   [disabled]="actionLoading[p.id]">
@@ -285,6 +294,96 @@ export interface AIResult {
         </div>
       }
     </div>
+
+    <!-- MODAL: VER DIAGRAMA DE POLÍTICA -->
+    @if (showDiagramaModal && politicaVisualizando) {
+      <div class="modal-overlay" (click)="cerrarDiagrama()">
+        <div class="modal-diagrama" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div>
+              <h2 class="modal-title">📋 {{ politicaVisualizando.nombre }}</h2>
+              <p class="modal-sub">
+                <span class="badge" [class]="badgeClass(politicaVisualizando.estado)">{{ politicaVisualizando.estado }}</span>
+                &nbsp;{{ politicaVisualizando.categoria || '' }}
+                &nbsp;· v{{ politicaVisualizando.version }}
+                &nbsp;· {{ (politicaVisualizando.nodos || []).length }} nodos
+              </p>
+            </div>
+            <div class="modal-actions-header">
+              <button class="btn-sm btn-edit" (click)="router.navigate(['/editor', politicaVisualizando.id]); cerrarDiagrama()">
+                ✏️ Abrir en Editor
+              </button>
+              <button class="btn-sm btn-outline" (click)="cerrarDiagrama()">✕ Cerrar</button>
+            </div>
+          </div>
+
+          <!-- Diagrama visual de swimlanes -->
+          <div class="diagrama-container">
+            @if (!politicaVisualizando.nodos || politicaVisualizando.nodos.length === 0) {
+              <div class="diagrama-empty">
+                <p>Esta política no tiene nodos definidos aún.</p>
+                <button class="btn-sm btn-edit" (click)="router.navigate(['/editor', politicaVisualizando.id]); cerrarDiagrama()">
+                  ✏️ Diseñar en el Editor
+                </button>
+              </div>
+            } @else {
+              <!-- Swimlanes por departamento -->
+              <div class="swimlanes-wrapper">
+                @for (lane of getSwimlanes(politicaVisualizando.nodos); track lane.dept) {
+                  <div class="swimlane">
+                    <div class="swimlane-header">
+                      <span class="swimlane-dept">{{ lane.dept || 'Sin departamento' }}</span>
+                      <span class="swimlane-count">{{ lane.nodos.length }} nodo(s)</span>
+                    </div>
+                    <div class="swimlane-body">
+                      @for (nodo of lane.nodos; track nodo.id) {
+                        <div class="nodo-card" [class]="'nodo-' + nodo.tipo.toLowerCase()">
+                          <div class="nodo-shape">
+                            @if (nodo.tipo === 'START') { <div class="shape-start">●</div> }
+                            @else if (nodo.tipo === 'END') { <div class="shape-end">◉</div> }
+                            @else if (nodo.tipo === 'DECISION') { <div class="shape-decision">◆</div> }
+                            @else if (nodo.tipo === 'PARALLEL') { <div class="shape-parallel">⫸</div> }
+                            @else { <div class="shape-task">▭</div> }
+                          </div>
+                          <div class="nodo-info">
+                            <p class="nodo-nombre">{{ nodo.nombre }}</p>
+                            @if (nodo.descripcion) {
+                              <p class="nodo-desc">{{ nodo.descripcion }}</p>
+                            }
+                            @if (nodo.camposFormulario && nodo.camposFormulario.length > 0) {
+                              <p class="nodo-campos">📝 {{ nodo.camposFormulario.length }} campo(s)</p>
+                            }
+                            @if (nodo.tiempoLimiteHoras) {
+                              <p class="nodo-tiempo">⏱️ Límite: {{ nodo.tiempoLimiteHoras }}h</p>
+                            }
+                            @if (nodo.conexiones && nodo.conexiones.length > 0) {
+                              <div class="nodo-conexiones">
+                                @for (c of nodo.conexiones; track c) {
+                                  <span class="conexion-badge">→ {{ getNombreNodo(politicaVisualizando.nodos, c) }}</span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Leyenda -->
+              <div class="diagrama-leyenda">
+                <span class="leyenda-item"><span class="shape-start sm">●</span> Inicio</span>
+                <span class="leyenda-item"><span class="shape-task sm">▭</span> Tarea</span>
+                <span class="leyenda-item"><span class="shape-decision sm">◆</span> Decisión</span>
+                <span class="leyenda-item"><span class="shape-parallel sm">⫸</span> Paralelo</span>
+                <span class="leyenda-item"><span class="shape-end sm">◉</span> Fin</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     :host { display: contents; }
@@ -427,9 +526,85 @@ export interface AIResult {
     .btn-ai:hover:not(:disabled) { background: rgba(139,92,246,0.25); }
     .btn-outline { background: transparent; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.15); }
     .btn-outline:hover:not(:disabled) { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); }
+    .btn-view { background: rgba(14,165,233,0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); }
+    .btn-view:hover:not(:disabled) { background: rgba(14,165,233,0.25); }
+    .btn-edit { background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); }
+    .btn-edit:hover:not(:disabled) { background: rgba(234,179,8,0.25); }
+    .btn-primary-sm { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); }
+    .btn-primary-sm:hover { background: rgba(59,130,246,0.3); }
     .action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 
-    /* NOTIF BUTTON */
+    /* MODAL DIAGRAMA */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(4px);
+      animation: fadeIn 0.15s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-diagrama {
+      background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; width: min(92vw, 1100px); max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
+    .modal-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .modal-actions-header { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .diagrama-container { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .diagrama-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 60px; gap: 16px; color: rgba(255,255,255,0.4); text-align: center;
+    }
+    .swimlanes-wrapper { display: flex; flex-direction: column; gap: 2px; }
+    .swimlane { border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+    .swimlane-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px; background: rgba(59,130,246,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .swimlane-dept { font-size: 12px; font-weight: 700; color: #60a5fa; letter-spacing: 0.05em; text-transform: uppercase; }
+    .swimlane-count { font-size: 11px; color: rgba(255,255,255,0.3); }
+    .swimlane-body { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 16px; background: rgba(255,255,255,0.02); }
+    .nodo-card {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; padding: 10px 12px; min-width: 160px; max-width: 220px;
+    }
+    .nodo-start  { border-left: 3px solid #4ade80; }
+    .nodo-end    { border-left: 3px solid #f87171; }
+    .nodo-task   { border-left: 3px solid #60a5fa; }
+    .nodo-decision { border-left: 3px solid #fb923c; }
+    .nodo-parallel { border-left: 3px solid #c084fc; }
+    .nodo-shape { flex-shrink: 0; font-size: 18px; line-height: 1; margin-top: 2px; }
+    .shape-start  { color: #4ade80; }
+    .shape-end    { color: #f87171; }
+    .shape-task   { color: #60a5fa; font-size: 14px; }
+    .shape-decision { color: #fb923c; }
+    .shape-parallel { color: #c084fc; }
+    .nodo-info { flex: 1; min-width: 0; }
+    .nodo-nombre { font-size: 13px; font-weight: 600; margin: 0 0 3px; color: rgba(255,255,255,0.9); }
+    .nodo-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin: 0 0 4px; line-height: 1.4; }
+    .nodo-campos { font-size: 10px; color: rgba(255,255,255,0.35); margin: 2px 0; }
+    .nodo-tiempo { font-size: 10px; color: rgba(234,179,8,0.7); margin: 2px 0; }
+    .nodo-conexiones { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+    .conexion-badge { font-size: 10px; background: rgba(59,130,246,0.1); color: #60a5fa; border-radius: 4px; padding: 1px 5px; }
+    .diagrama-leyenda {
+      display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px;
+      padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .leyenda-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.4); }
+    .sm { font-size: 12px !important; }
     .notif-btn {
       position: relative; width: 38px; height: 38px;
       border-radius: 8px; background: rgba(255,255,255,0.07);
@@ -547,6 +722,10 @@ export class AdminComponent implements OnInit, OnDestroy {
   aiResult: AIResult | null = null;
   aiPoliticaNombre = '';
   private wsSub?: Subscription;
+
+  // Modal diagrama
+  showDiagramaModal = false;
+  politicaVisualizando: Politica | null = null;
 
   navItems: NavItem[] = [
     { icon: '📊', label: 'Panel Principal', route: '/admin' },
@@ -765,8 +944,40 @@ export class AdminComponent implements OnInit, OnDestroy {
     return map[estado] ?? 'badge';
   }
 
-  showToast(type: 'success' | 'error' | 'info', message: string): void {
-    const id = ++this.toastCounter;
+  // ── Modal diagrama ──────────────────────────────────────────────────────
+  verDiagrama(politica: Politica): void {
+    this.politicaVisualizando = politica;
+    this.showDiagramaModal = true;
+  }
+
+  cerrarDiagrama(): void {
+    this.showDiagramaModal = false;
+    this.politicaVisualizando = null;
+  }
+
+  /** Agrupa nodos por departamento para mostrar swimlanes */
+  getSwimlanes(nodos: Nodo[]): { dept: string; nodos: Nodo[] }[] {
+    const map = new Map<string, Nodo[]>();
+    // Primero los nodos sin departamento (START/END)
+    const sinDept: Nodo[] = [];
+    for (const n of nodos) {
+      const dept = n.departamento || '';
+      if (!dept) { sinDept.push(n); continue; }
+      if (!map.has(dept)) map.set(dept, []);
+      map.get(dept)!.push(n);
+    }
+    const result: { dept: string; nodos: Nodo[] }[] = [];
+    if (sinDept.length > 0) result.push({ dept: 'Flujo General', nodos: sinDept });
+    map.forEach((ns, dept) => result.push({ dept, nodos: ns }));
+    return result;
+  }
+
+  /** Devuelve el nombre de un nodo por su ID */
+  getNombreNodo(nodos: Nodo[], id: string): string {
+    return nodos.find(n => n.id === id)?.nombre || id;
+  }
+
+  showToast(type: 'success' | 'error' | 'info', message: string): void {    const id = ++this.toastCounter;
     this.toasts.push({ id, type, message });
     setTimeout(() => {
       this.toasts = this.toasts.filter((t) => t.id !== id);

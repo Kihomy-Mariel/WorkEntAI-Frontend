@@ -26,41 +26,51 @@ export class WebSocketService {
   conectar(usuarioId: string, rol: string, departamento?: string): void {
     if (this.connected) return;
 
-    this.client = new Client({
-      webSocketFactory: () => new SockJS(environment.wsUrl),
-      reconnectDelay: 5000,
-      onConnect: () => {
-        this.connected = true;
+    // Crear y activar el cliente fuera de la zona de Angular para que el
+    // handshake de SockJS (polling HTTP) no interfiera con la detección de
+    // cambios ni bloquee las respuestas de los servicios REST.
+    this.zone.runOutsideAngular(() => {
+      this.client = new Client({
+        webSocketFactory: () => new SockJS(environment.wsUrl),
+        reconnectDelay: 5000,
+        onConnect: () => {
+          // Volver a la zona solo para actualizar estado y suscribir topics
+          this.zone.run(() => {
+            this.connected = true;
+          });
 
-        // Suscripción por usuario específico
-        this.client.subscribe(
-          `/topic/funcionario/${usuarioId}`,
-          (msg: Message) => this.zone.run(() => this.emitir(msg.body))
-        );
-        this.client.subscribe(
-          `/topic/cliente/${usuarioId}`,
-          (msg: Message) => this.zone.run(() => this.emitir(msg.body))
-        );
-
-        // Admin recibe todo
-        if (rol === 'ADMIN') {
+          // Suscripción por usuario específico
           this.client.subscribe(
-            `/topic/admin`,
+            `/topic/funcionario/${usuarioId}`,
             (msg: Message) => this.zone.run(() => this.emitir(msg.body))
           );
-        }
-
-        // Funcionario recibe notificaciones de su departamento
-        if (departamento && rol === 'FUNCIONARIO') {
           this.client.subscribe(
-            `/topic/departamento/${encodeURIComponent(departamento)}`,
+            `/topic/cliente/${usuarioId}`,
             (msg: Message) => this.zone.run(() => this.emitir(msg.body))
           );
+
+          // Admin recibe todo
+          if (rol === 'ADMIN') {
+            this.client.subscribe(
+              `/topic/admin`,
+              (msg: Message) => this.zone.run(() => this.emitir(msg.body))
+            );
+          }
+
+          // Funcionario recibe notificaciones de su departamento
+          if (departamento && rol === 'FUNCIONARIO') {
+            this.client.subscribe(
+              `/topic/departamento/${encodeURIComponent(departamento)}`,
+              (msg: Message) => this.zone.run(() => this.emitir(msg.body))
+            );
+          }
+        },
+        onDisconnect: () => {
+          this.zone.run(() => { this.connected = false; });
         }
-      },
-      onDisconnect: () => { this.connected = false; }
+      });
+      this.client.activate();
     });
-    this.client.activate();
   }
 
   suscribirPolitica(politicaId: string, callback: (msg: any) => void): void {
@@ -90,7 +100,7 @@ export class WebSocketService {
 
   desconectar(): void {
     if (this.client) {
-      this.client.deactivate();
+      this.zone.runOutsideAngular(() => this.client.deactivate());
       this.connected = false;
     }
   }

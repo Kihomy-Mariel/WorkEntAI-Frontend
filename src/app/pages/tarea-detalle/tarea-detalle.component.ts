@@ -144,6 +144,37 @@ import { AuthService } from '../../services/auth/auth.service';
                         <input type="number" class="form-input" [(ngModel)]="formularioDatos[campo.nombre]"
                           [placeholder]="'Ingresa ' + (campo.etiqueta || campo.nombre)"
                           [disabled]="tarea.estado === 'COMPLETADO'" />
+                      } @else if (campo.tipo === 'grid') {
+                        <!-- Grid/Tabla dinámica -->
+                        <div class="grid-field">
+                          <div class="grid-table-wrap">
+                            <table class="grid-table">
+                              <thead>
+                                <tr>
+                                  <th>#</th>
+                                  <th>Descripción</th>
+                                  <th>Valor</th>
+                                  @if (tarea.estado !== 'COMPLETADO') { <th></th> }
+                                </tr>
+                              </thead>
+                              <tbody>
+                                @for (row of getGridRows(campo.nombre); track $index; let i = $index) {
+                                  <tr>
+                                    <td class="grid-idx">{{ i + 1 }}</td>
+                                    <td><input class="form-input grid-input" [(ngModel)]="row.descripcion" placeholder="Descripción" [disabled]="tarea.estado === 'COMPLETADO'" /></td>
+                                    <td><input class="form-input grid-input" [(ngModel)]="row.valor" placeholder="Valor" [disabled]="tarea.estado === 'COMPLETADO'" /></td>
+                                    @if (tarea.estado !== 'COMPLETADO') {
+                                      <td><button class="btn-grid-del" (click)="removeGridRow(campo.nombre, i)">✕</button></td>
+                                    }
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                          @if (tarea.estado !== 'COMPLETADO') {
+                            <button class="btn-grid-add" (click)="addGridRow(campo.nombre)">+ Agregar fila</button>
+                          }
+                        </div>
                       } @else {
                         <input type="text" class="form-input" [(ngModel)]="formularioDatos[campo.nombre]"
                           [placeholder]="'Ingresa ' + (campo.etiqueta || campo.nombre)"
@@ -308,6 +339,31 @@ import { AuthService } from '../../services/auth/auth.service';
     .bool-option:hover { border-color: var(--primary); }
     .bool-option.selected { border-color: var(--primary); background: hsl(216,85%,50%,0.08); }
 
+    /* Grid field */
+    .grid-field { display: flex; flex-direction: column; gap: 8px; }
+    .grid-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+    .grid-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .grid-table th {
+      padding: 6px 10px; background: var(--bg-2); color: var(--text-muted);
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+    .grid-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); }
+    .grid-table tr:last-child td { border-bottom: none; }
+    .grid-idx { font-size: 11px; color: var(--text-faint); width: 28px; text-align: center; }
+    .grid-input { padding: 4px 8px !important; font-size: 12px !important; }
+    .btn-grid-del {
+      background: none; border: none; color: var(--danger); cursor: pointer;
+      font-size: 12px; padding: 2px 6px; border-radius: 4px;
+    }
+    .btn-grid-del:hover { background: hsl(355,80%,55%,0.1); }
+    .btn-grid-add {
+      background: hsl(216,85%,50%,0.08); border: 1px dashed var(--primary);
+      color: var(--primary); border-radius: 6px; padding: 5px 12px;
+      font-size: 12px; cursor: pointer; font-family: inherit; width: 100%;
+    }
+    .btn-grid-add:hover { background: hsl(216,85%,50%,0.15); }
+
     .acciones { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 
     .completado-banner {
@@ -375,18 +431,38 @@ export class TareaDetalleComponent implements OnInit {
   }
 
   cargarCamposFormulario(tarea: Tarea): void {
-    // Try to get campos from tramite's politica nodo
-    if (this.tramite) {
-      // campos will be loaded from tramite's politica
+    // Los camposFormulario se copian del nodo al crear la tarea en el backend
+    // Si la tarea los tiene, usarlos directamente
+    if (tarea.camposFormulario && tarea.camposFormulario.length > 0) {
+      this.camposFormulario = tarea.camposFormulario;
+    } else {
+      // Fallback: campos básicos si el nodo no tenía formulario definido
+      this.camposFormulario = [
+        { nombre: 'observacion', tipo: 'textarea', etiqueta: 'Observaciones', requerido: true },
+        { nombre: 'aprobado', tipo: 'boolean', etiqueta: '¿Aprobado?', requerido: true }
+      ];
     }
-    // For now use a default set based on nodo type
-    this.camposFormulario = [
-      { nombre: 'observacion', tipo: 'textarea', etiqueta: 'Observaciones', requerido: true },
-      { nombre: 'aprobado', tipo: 'boolean', etiqueta: '¿Aprobado?', requerido: true }
-    ];
   }
 
   toggleAI(): void { this.showAI = !this.showAI; }
+
+  // ── Grid field helpers ────────────────────────────────────────────────────
+  getGridRows(campo: string): { descripcion: string; valor: string }[] {
+    if (!this.formularioDatos[campo]) {
+      this.formularioDatos[campo] = [];
+    }
+    return this.formularioDatos[campo] as { descripcion: string; valor: string }[];
+  }
+
+  addGridRow(campo: string): void {
+    if (!this.formularioDatos[campo]) this.formularioDatos[campo] = [];
+    (this.formularioDatos[campo] as any[]).push({ descripcion: '', valor: '' });
+  }
+
+  removeGridRow(campo: string, idx: number): void {
+    if (!this.formularioDatos[campo]) return;
+    (this.formularioDatos[campo] as any[]).splice(idx, 1);
+  }
 
   extraerDatosIA(): void {
     if (!this.textoDocumento.trim() || !this.tarea) return;
