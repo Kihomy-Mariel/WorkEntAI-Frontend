@@ -7,7 +7,7 @@ import { Usuario } from '../../models/models';
 import { UsuarioService } from '../../services/usuario/usuario.service';
 import { DepartamentoService, Departamento } from '../../services/departamento/departamento.service';
 import { AuthService } from '../../services/auth/auth.service';
-import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.component';
+import { SidebarComponent, NavItem, ADMIN_NAV_ITEMS } from '../../components/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-users',
@@ -329,13 +329,7 @@ import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.comp
   `]
 })
 export class UsersComponent implements OnInit {
-  navItems: NavItem[] = [
-    { icon: '📊', label: 'Panel Principal',    route: '/admin' },
-    { icon: '✏️', label: 'Editor de Políticas', route: '/editor' },
-    { icon: '📈', label: 'Analytics',           route: '/analytics' },
-    { icon: '👥', label: 'Usuarios',            route: '/users' },
-    { icon: '👤', label: 'Mi Perfil',           route: '/perfil' },
-  ];
+  navItems = ADMIN_NAV_ITEMS;
 
   activeTab = 'usuarios';
   usuarios: Usuario[] = [];

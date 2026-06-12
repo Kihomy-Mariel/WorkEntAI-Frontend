@@ -2,8 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, roleRedirectGuard, adminGuard, funcionarioGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
-  // Raíz → redirige según rol si está logueado
-  { path: '', canActivate: [roleRedirectGuard], children: [] },
+  { path: '', loadComponent: () => import('./pages/landing/landing').then(m => m.Landing) },
   {
     path: 'login',
     loadComponent: () =>
@@ -14,18 +13,42 @@ export const routes: Routes = [
     path: 'admin',
     loadComponent: () =>
       import('./pages/admin/admin.component').then(m => m.AdminComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'admin/reportes',
+    loadComponent: () =>
+      import('./pages/admin/reportes/reportes-dinamicos.component').then(m => m.ReportesDinamicosComponent),
+    canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'admin/cuellos-botella',
+    loadComponent: () =>
+      import('./pages/admin/cuellos/admin-cuellos.component').then(m => m.AdminCuellosComponent),
+    canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'admin/politicas',
+    loadComponent: () =>
+      import('./pages/admin/politicas/admin-politicas.component').then(m => m.AdminPoliticasComponent),
+    canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'admin/tramites',
+    loadComponent: () =>
+      import('./pages/admin/tramites/admin-tramites.component').then(m => m.AdminTramitesComponent),
+    canActivate: [authGuard, adminGuard]
   },
   {
     path: 'editor',
     loadComponent: () =>
-      import('./pages/editor/editor.component').then(m => m.EditorComponent),
+      import('./pages/editor/editor-layout/editor-layout.component').then(m => m.EditorLayoutComponent),
     canActivate: [authGuard]
   },
   {
     path: 'editor/:id',
     loadComponent: () =>
-      import('./pages/editor/editor.component').then(m => m.EditorComponent),
+      import('./pages/editor/editor-layout/editor-layout.component').then(m => m.EditorLayoutComponent),
     canActivate: [authGuard]
   },
   {
@@ -66,11 +89,44 @@ export const routes: Routes = [
       import('./pages/tramite-detalle/tramite-detalle.component').then(m => m.TramiteDetalleComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'tramite/:id/documentos',
+    loadComponent: () =>
+      import('./pages/repositorio-documental/repositorio-documental.component').then(m => m.RepositorioDocumentalComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'tramite/:id/documentos/auditoria',
+    loadComponent: () =>
+      import('./pages/admin/auditoria/auditoria-documental.component').then(m => m.AuditoriaDocumentalComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'colaborar/:docId',
+    loadComponent: () =>
+      import('./pages/documentos/editor-colaborativo/editor-colaborativo.component').then(m => m.EditorColaborativoComponent),
+    canActivate: [authGuard]
+  },
   // Profile
   {
     path: 'perfil',
     loadComponent: () =>
       import('./pages/perfil/perfil.component').then(m => m.PerfilComponent),
+    canActivate: [authGuard]
+  },
+  // ── Ciclo 2 ──────────────────────────────────────────────────────
+  // Agente IA — CLIENTE (CU-22/23)
+  {
+    path: 'agente',
+    loadComponent: () =>
+      import('./pages/agente-ia/agente-ia.component').then(m => m.AgenteIaComponent),
+    canActivate: [authGuard]
+  },
+  // Reportes NLP — ADMIN (CU-30)
+  {
+    path: 'reportes',
+    loadComponent: () =>
+      import('./pages/reportes/reportes.component').then(m => m.ReportesComponent),
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: 'login' }

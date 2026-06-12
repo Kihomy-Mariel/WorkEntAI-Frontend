@@ -52,5 +52,12 @@ export class TramiteService {
       responseType: 'blob'
     });
   }
+
+  subirArchivo(tramiteId: string, archivo: File, nombreRequisito: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', archivo);
+    formData.append('nombreRequisito', nombreRequisito);
+    return this.http.post(`${this.apiUrl}/${tramiteId}/archivos`, formData);
+  }
 }
 

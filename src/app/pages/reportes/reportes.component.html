@@ -1,0 +1,142 @@
+<div class="reportes-page">
+
+  <div class="reportes-layout">
+
+    <!-- ── Sidebar izquierdo ─────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📊 Reportes NLP</h2>
+        <p>Genera reportes con lenguaje natural</p>
+      </div>
+
+      <!-- Ejemplos predefinidos -->
+      <div class="ejemplos-section">
+        <h3>Ejemplos rápidos</h3>
+        <button
+          *ngFor="let ej of ejemplos"
+          class="ejemplo-btn"
+          (click)="usarEjemplo(ej)">
+          <span class="ej-icon">💡</span>
+          {{ ej }}
+        </button>
+      </div>
+
+      <!-- Historial -->
+      <div class="historial-section" *ngIf="historial.length > 0">
+        <h3>Historial</h3>
+        <div
+          *ngFor="let rep of historial"
+          class="historial-item"
+          (click)="cargarReporte(rep)">
+          <span class="historial-icon">📋</span>
+          <span class="historial-titulo">{{ rep.titulo }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Área principal ────────────────────────────────────────── -->
+    <main class="main-area">
+
+      <!-- Input de solicitud -->
+      <div class="solicitud-card">
+        <div class="solicitud-header">
+          <div class="solicitud-icon">🔍</div>
+          <div>
+            <h2>¿Qué reporte necesitas?</h2>
+            <p>Describe en lenguaje natural el reporte que deseas generar</p>
+          </div>
+        </div>
+
+        <div class="solicitud-input-wrapper">
+          <textarea
+            id="solicitudInput"
+            [(ngModel)]="solicitud"
+            (keydown)="onKeydown($event)"
+            placeholder="Ej: 'Muéstrame el total de trámites completados por departamento este mes'"
+            rows="3"
+            class="solicitud-input"
+            [disabled]="cargando">
+          </textarea>
+          <div class="solicitud-actions">
+            <span class="hint-text">Ctrl+Enter para generar</span>
+            <button
+              class="btn-generar"
+              (click)="generarReporte()"
+              [disabled]="!solicitud.trim() || cargando">
+              <span *ngIf="!cargando">✨ Generar Reporte</span>
+              <span *ngIf="cargando" class="loading-text">
+                <span class="spinner"></span> Generando...
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-banner" *ngIf="error">
+        ⚠️ {{ error }}
+      </div>
+
+      <!-- Loading skeleton -->
+      <div class="skeleton-card" *ngIf="cargando">
+        <div class="skeleton-title"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row short"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row short"></div>
+      </div>
+
+      <!-- Resultado del reporte -->
+      <div class="reporte-card" *ngIf="reporte && !cargando">
+
+        <!-- Header del reporte -->
+        <div class="reporte-header">
+          <div>
+            <h3 class="reporte-titulo">{{ reporte.titulo }}</h3>
+            <p class="reporte-solicitud">Solicitud: "{{ reporte.solicitudOriginal }}"</p>
+          </div>
+          <div class="reporte-acciones">
+            <button
+              class="btn-excel"
+              (click)="exportarExcel()"
+              [disabled]="!reporte.exportable"
+              [title]="reporte.exportable ? 'Exportar a Excel' : 'No disponible'">
+              📥 Exportar Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- Resumen IA -->
+        <div class="reporte-resumen" *ngIf="reporte.resumen">
+          <div class="resumen-icon">🤖</div>
+          <p>{{ reporte.resumen }}</p>
+        </div>
+
+        <!-- Tabla de datos -->
+        <div class="tabla-wrapper" *ngIf="reporte.columnas && reporte.columnas.length && reporte.filas && reporte.filas.length">
+          <table class="reporte-tabla">
+            <thead>
+              <tr>
+                <th *ngFor="let col of reporte.columnas">{{ col }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let fila of reporte.filas; let i = index" [class.fila-par]="i % 2 === 0">
+                <td *ngFor="let celda of fila">{{ celda }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="tabla-info">{{ reporte.filas.length }} registro(s)</div>
+        </div>
+
+        <!-- Sin datos -->
+        <div class="sin-datos" *ngIf="!reporte.filas || !reporte.filas.length">
+          <span>📭</span>
+          <p>No hay datos disponibles para esta solicitud.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+</div>

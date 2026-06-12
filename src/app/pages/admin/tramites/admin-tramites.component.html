@@ -1,0 +1,123 @@
+<div class="admin-layout">
+  <app-sidebar [activeRoute]="'/admin/tramites'" [navItems]="navItems"></app-sidebar>
+  <div class="admin-main">
+
+    <!-- HERO HEADER -->
+    <div class="hero-header">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">Gestor de Trámites</h1>
+        <p class="hero-sub">Explora, filtra y analiza el historial completo de trámites de tus clientes.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-glass" (click)="loadTramites()" [disabled]="loading">
+          @if (loading) { <i class="ph ph-spinner ph-spin"></i> Sincronizando }
+          @else { <i class="ph ph-arrows-clockwise"></i> Actualizar }
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="admin-content" style="padding-top: 16px;">
+      
+      <div class="glass-card">
+        <div class="card-header" style="margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 16px;">
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <!-- SEARCH BAR -->
+            <div style="position: relative; width: 300px;">
+              <i class="ph ph-magnifying-glass" style="position: absolute; left: 12px; top: 10px; color: #64748b; font-size: 18px;"></i>
+              <input type="text" placeholder="Buscar por ID o Cliente..." 
+                     (keyup)="filter($event)"
+                     class="search-input">
+            </div>
+            
+            <!-- FILTERS -->
+            <button class="btn-sm" [ngClass]="statusFilter === '' ? 'btn-glass primary' : 'btn-glass'" (click)="setStatus('')">Todos</button>
+            <button class="btn-sm" [ngClass]="statusFilter === 'NUEVO' ? 'btn-glass primary' : 'btn-glass'" (click)="setStatus('NUEVO')">Nuevos</button>
+            <button class="btn-sm" [ngClass]="statusFilter === 'EN_PROCESO' ? 'btn-glass primary' : 'btn-glass'" (click)="setStatus('EN_PROCESO')">En Proceso</button>
+            <button class="btn-sm" [ngClass]="statusFilter === 'COMPLETADO' ? 'btn-glass primary' : 'btn-glass'" (click)="setStatus('COMPLETADO')">Completados</button>
+            <button class="btn-sm" [ngClass]="statusFilter === 'DEMORA' ? 'btn-glass primary' : 'btn-glass'" (click)="setStatus('DEMORA')" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">⚠️ Con Demora</button>
+          </div>
+          
+          <div class="card-actions">
+            <span style="color: #64748b; font-size: 14px;">Mostrando {{ filteredTramites.length }} trámites</span>
+          </div>
+        </div>
+        
+        @if (loading) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Cargando trámites...</p>
+          </div>
+        } @else if (filteredTramites.length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon"><i class="ph ph-magnifying-glass-minus"></i></div>
+            <p>No se encontraron trámites con estos criterios.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Referencia</th>
+                  <th>Descripción</th>
+                  <th>Política</th>
+                  <th>Cliente</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (t of filteredTramites; track t.id; let i = $index) {
+                  <tr>
+                    <td><span style="color: #64748b; font-weight: 500;">{{ i + 1 }}</span></td>
+                    <td>
+                      <div class="cell-title">{{ t.numeroReferencia || t.id.slice(0, 8) }}</div>
+                      <div class="cell-sub" style="font-size: 10px;">ID: {{ t.id | slice:0:6 }}...</div>
+                    </td>
+                    <td>
+                      <div style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #94a3b8;">
+                        {{ t.descripcion || 'Sin descripción detallada' }}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="category-tag"><i class="ph ph-projector-screen-chart"></i> {{ t.nombrePolitica || t.politicaId.slice(0,10) }}</span>
+                    </td>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; flex-shrink: 0;">
+                          {{ (t.nombreCliente || t.clienteId).charAt(0).toUpperCase() }}
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                          <span style="color: #e2e8f0; font-weight: 500;">{{ t.nombreCliente || t.clienteId }}</span>
+                          <span style="color: #64748b; font-size: 11px;">{{ (t.nombreCliente || t.clienteId).toLowerCase().replace(' ', '.') }}@empresa.com</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                        <span class="badge" [class]="badgeClass(t.estado)">{{ t.estado }}</span>
+                        @if (isDelayed(t)) {
+                          <span style="font-size: 10px; color: #ef4444; font-weight: 600; display: flex; align-items: center; gap: 2px;"><i class="ph ph-warning-circle"></i> Demorado</span>
+                        }
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 8px;">
+                        <button class="btn-icon" (click)="router.navigate(['/tramite', t.id, 'documentos'])" title="Ver Documentos"><i class="ph ph-folder-open"></i></button>
+                        <button class="btn-icon" (click)="router.navigate(['/tramite', t.id, 'documentos', 'auditoria'])" title="Auditoría Documental"><i class="ph ph-shield-check"></i></button>
+                        <button class="btn-icon" (click)="router.navigate(['/tramite', t.id])" title="Ver Flujo Completo" style="color: #3b82f6;"><i class="ph ph-kanban"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+    </div>
+  </div>
+</div>

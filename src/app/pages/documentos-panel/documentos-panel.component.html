@@ -1,0 +1,37 @@
+<div class="documentos-panel">
+  <h3>Gestión Documental</h3>
+  <div *ngIf="cargando">Cargando documentos...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  <div *ngIf="mensajeExito" class="success">{{ mensajeExito }}</div>
+
+  <div class="upload-section">
+    <input type="file" (change)="onArchivoSeleccionado($event)" [disabled]="subiendo" />
+    <span *ngIf="subiendo">Subiendo...</span>
+  </div>
+
+  <table *ngIf="!cargando && documentos.length > 0">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Versión</th>
+        <th>Tamaño</th>
+        <th>Subido Por</th>
+        <th>Fecha</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let doc of documentos">
+        <td>{{ doc.nombre }}</td>
+        <td>v{{ doc.version }}</td>
+        <td>{{ formatearTamano(doc.tamanoBytes) }}</td>
+        <td>{{ doc.subidoPorNombre }}</td>
+        <td>{{ formatearFecha(doc.fechaSubida) }}</td>
+        <td>
+          <button (click)="descargar(doc)">Descargar</button>
+          <button (click)="eliminar(doc)" *ngIf="esAdmin">Eliminar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,118 @@
+<div class="landing-container">
+  <!-- Dynamic Background -->
+  <div class="bg-mesh">
+    <div class="mesh-blob blob-1"></div>
+    <div class="mesh-blob blob-2"></div>
+    <div class="mesh-blob blob-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="landing-header">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="12" fill="url(#brandGrad)"/>
+        <path d="M12 20L20 12L28 20L20 28L12 20Z" fill="white" fill-opacity="0.2"/>
+        <circle cx="20" cy="20" r="4" fill="white"/>
+        <path d="M8 20H12M28 20H32M20 8V12M20 28V32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="brandGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#3b82f6"/>
+            <stop offset="1" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="logo-text">WorkEntAI</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#features">Características</a>
+      <button class="btn-login-outline" (click)="router.navigate(['/login'])">Iniciar Sesión</button>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="hero-section">
+    <div class="hero-content">
+      <div class="badge-pill">
+        <span class="pulse-dot"></span>
+        Plataforma Workflow impulsada por IA
+      </div>
+      <h1 class="hero-title">
+        Orquesta tus procesos con <br/><span class="gradient-text">Inteligencia Artificial</span>
+      </h1>
+      <p class="hero-description">
+        WorkEntAI automatiza trámites, facilita la colaboración documental en tiempo real y usa Agentes IA para predecir cuellos de botella antes de que ocurran.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary-large" (click)="router.navigate(['/login'])">
+          Comenzar ahora <i class="ph ph-arrow-right"></i>
+        </button>
+        <button class="btn-secondary-large" (click)="router.navigate(['/login'])">
+          <i class="ph ph-play-circle"></i> Ver Demo
+        </button>
+      </div>
+    </div>
+    
+    <div class="hero-visual">
+      <div class="glass-mockup">
+        <div class="mockup-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="skel-line w-full"></div>
+            <div class="skel-line w-half"></div>
+            <div class="skel-line w-full"></div>
+          </div>
+          <div class="mockup-content">
+            <div class="mockup-card top-card">
+              <div class="skel-circle"></div>
+              <div class="skel-text-wrap">
+                <div class="skel-line w-full"></div>
+                <div class="skel-line w-half"></div>
+              </div>
+            </div>
+            <div class="mockup-card"></div>
+            <div class="mockup-card"></div>
+          </div>
+          <div class="mockup-float mockup-ai">
+            <i class="ph ph-sparkle"></i> Agente IA Activo
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bento Features -->
+  <section id="features" class="features-section">
+    <div class="section-header">
+      <h2>Todo lo que necesitas para escalar</h2>
+      <p>Una suite completa para modernizar la gestión pública y empresarial.</p>
+    </div>
+    <div class="bento-grid">
+      <div class="bento-item ai-agents">
+        <div class="icon-wrap"><i class="ph ph-robot"></i></div>
+        <h3>Agentes de IA</h3>
+        <p>Asistentes virtuales que inician trámites, responden consultas y guían a tus clientes automáticamente.</p>
+      </div>
+      <div class="bento-item workflows">
+        <div class="icon-wrap"><i class="ph ph-git-branch"></i></div>
+        <h3>Workflows Dinámicos</h3>
+        <p>Diseña rutas de aprobación y procesos con nuestro editor visual interactivo tipo drag & drop.</p>
+      </div>
+      <div class="bento-item collab">
+        <div class="icon-wrap"><i class="ph ph-users-three"></i></div>
+        <h3>Edición Colaborativa</h3>
+        <p>Múltiples usuarios editando documentos y resolviendo conflictos en tiempo real usando tecnología CRDT.</p>
+      </div>
+      <div class="bento-item analytics">
+        <div class="icon-wrap"><i class="ph ph-trend-up"></i></div>
+        <h3>Analítica Predictiva</h3>
+        <p>Prevé atascos y tiempos de respuesta antes de que sucedan usando modelos avanzados de Machine Learning.</p>
+      </div>
+    </div>
+  </section>
+  
+  <footer class="landing-footer">
+    <p>© 2026 WorkEntAI. Todos los derechos reservados.</p>
+  </footer>
+</div>

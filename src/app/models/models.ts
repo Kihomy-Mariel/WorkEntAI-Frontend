@@ -4,23 +4,37 @@ export interface Usuario {
   email: string;
   rol: string;
   departamento: string;
+  /** Multi-departamento (CU-03) */
+  departamentos: string[];
   activo: boolean;
   fechaCreacion?: string;
 }
 
 export interface CampoFormulario {
   nombre: string;
-  tipo: 'text' | 'textarea' | 'boolean' | 'select' | 'file' | 'number';
+  tipo: 'text' | 'textarea' | 'boolean' | 'select' | 'file' | 'number'
+      | 'grid' | 'fecha' | 'hora' | 'checkbox' | 'radio';
   etiqueta: string;
   requerido: boolean;
   opciones?: string[];
+}
+
+
+export interface CondicionNodo {
+
+  campo: string;
+  operador: '==' | '!=' | '>' | '<' | '>=' | '<=' | 'contains';
+  valor: string;
+  nodoSiId: string;
+  nodoNoId: string;
 }
 
 export interface Nodo {
   id: string;
   nombre: string;
   descripcion?: string;
-  tipo: 'START' | 'END' | 'TASK' | 'DECISION' | 'PARALLEL';
+  /** JOIN es el tipo para sincronización de ramas paralelas (CU-13) */
+  tipo: 'START' | 'END' | 'TASK' | 'DECISION' | 'PARALLEL' | 'JOIN';
   departamento: string;
   responsableId: string;
   nombreResponsable?: string;
@@ -28,10 +42,27 @@ export interface Nodo {
   posX: number;
   posY: number;
   conexiones: string[];
-  condiciones: { [key: string]: string };
-  camposFormulario: CampoFormulario[];
+  /** Condición evaluable para nodos DECISION (CU-05 Opción B) */
+  condicion?: CondicionNodo;
+  /** ID del nodo JOIN destino para nodos PARALLEL (CU-13) */
+  joinNodoId?: string;
+  condiciones?: Record<string, string>;
+  camposFormulario?: CampoFormulario[];
   documentosRequeridos?: string[];
+  permisosDocumentales?: Record<string, PermisoDocumental>;
   color?: string;
+}
+
+export interface PermisoDocumental {
+  lectura: boolean;
+  escritura: boolean;
+  subida: boolean;
+}
+
+export interface RequisitoTramite {
+  nombre: string;
+  descripcion?: string;
+  obligatorio: boolean;
 }
 
 export interface Politica {
@@ -41,6 +72,10 @@ export interface Politica {
   categoria?: string;
   organizacion?: string;
   tiempoEstimadoDias?: number;
+  /** Palabras clave para el agente IA (CU-22) */
+  etiquetas?: string[];
+  /** Documentos iniciales requeridos al cliente (CU-04) */
+  requisitosIniciales?: RequisitoTramite[];
   nodos: Nodo[];
   estado: 'BORRADOR' | 'ACTIVA' | 'INACTIVA';
   creadoPorId: string;
@@ -129,6 +164,8 @@ export interface AuthResponse {
   nombre: string;
   rol: string;
   departamento: string;
+  /** Multi-departamento (CU-03) */
+  departamentos?: string[];
 }
 
 export {}

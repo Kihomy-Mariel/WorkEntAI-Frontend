@@ -79,24 +79,38 @@ html, body {
   background: var(--bg);
 }
 
-/* ── Cards ────────────────────────────────────────────── */
+/* ── Glassmorphism & UI Utilities ────────────────────────────── */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow);
+}
+[data-theme="dark"] .glass-panel {
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .glass-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 20px;
-  transition: background 0.25s, border-color 0.25s;
+  transition: background 0.25s, border-color 0.25s, transform 0.2s;
   box-shadow: var(--shadow);
 }
-.glass-card:hover { border-color: var(--border-2); }
+.glass-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
 
 /* ── Badges ───────────────────────────────────────────── */
 .badge {
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 11px;
-  font-weight: 600;
-  display: inline-block;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .badge-nuevo      { background: hsl(355,80%,55%,0.12); color: var(--danger); }
 .badge-proceso    { background: hsl(20,89%,48%,0.12);  color: var(--warning); }
@@ -482,7 +496,7 @@ html, body {
 .logo-text {
   font-size: 16px; font-weight: 700;
   background: linear-gradient(135deg, var(--primary), var(--accent));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .nav-label {
   font-size: 9px; color: var(--text-faint);
@@ -540,7 +554,7 @@ html, body {
 .page-title {
   font-size: 22px; font-weight: 700; margin: 0 0 4px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .page-sub { font-size: 12px; color: var(--text-muted); margin: 0; }
 
@@ -561,3 +575,4 @@ html, body {
   .sidebar { display: none; }
   .main-content { padding: 12px; }
 }
+@import 'quill/dist/quill.snow.css';

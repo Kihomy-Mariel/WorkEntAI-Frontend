@@ -1,18 +1,21 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { catchError, of } from 'rxjs';
-import { Tramite } from '../../models/models';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs';
+import { Politica, Tramite } from '../../models/models';
 import { TramiteService } from '../../services/tramite/tramite.service';
+import { PoliticaService } from '../../services/politica/politica.service';
 import { WebSocketService } from '../../services/websocket/websocket.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.component';
 
+import { RouterModule } from '@angular/router';
+
 @Component({
   selector: 'app-tramite-detalle',
   standalone: true,
-  imports: [CommonModule, DatePipe, SidebarComponent],
+  imports: [CommonModule, DatePipe, SidebarComponent, RouterModule],
   template: `
     <div class="app-layout">
       <app-sidebar [activeRoute]="'/cliente'" [navItems]="navItems" />
@@ -31,6 +34,9 @@ import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.comp
               📄 Descargar PDF
             </button>
           }
+          <button class="btn-primary" [routerLink]="['/tramite', tramite?.id, 'documentos']" style="margin-left: 10px;">
+            📂 Ver Documentos
+          </button>
         </div>
 
         @if (loading) {
@@ -72,16 +78,19 @@ import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.comp
             </div>
           </div>
 
-          <!-- Progreso visual -->
+          <!-- Progreso visual completo (CU-15): todos los nodos de la política -->
           <div class="glass-card" style="margin-bottom:20px">
             <h3 class="section-title">📍 Progreso del Trámite</h3>
             <div class="progreso-steps">
               @for (paso of pasos; track paso.nodoId; let i = $index) {
                 <div class="paso" [class.paso-completado]="paso.completado"
-                  [class.paso-actual]="paso.actual" [class.paso-pendiente]="!paso.completado && !paso.actual">
+                  [class.paso-actual]="paso.actual"
+                  [class.paso-pendiente]="!paso.completado && !paso.actual"
+                  [class.paso-especial]="paso.esEspecial">
                   <div class="paso-circle">
                     @if (paso.completado) { ✓ }
                     @else if (paso.actual) { ● }
+                    @else if (paso.esEspecial) { ⋯ }
                     @else { {{ i + 1 }} }
                   </div>
                   <div class="paso-info">
@@ -90,13 +99,20 @@ import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.comp
                     @if (paso.fecha) {
                       <p class="paso-fecha">{{ paso.fecha | date:'dd/MM HH:mm' }}</p>
                     }
+                    @if (paso.duracionMinutos) {
+                      <p class="paso-dur">{{ paso.duracionMinutos }} min</p>
+                    }
                   </div>
                   @if (i < pasos.length - 1) {
-                    <div class="paso-linea" [class.linea-completada]="paso.completado"></div>
+                    <div class="paso-linea" [class.linea-completada]="paso.completado"
+                      [class.linea-actual]="paso.actual"></div>
                   }
                 </div>
               }
             </div>
+            @if (pasos.length === 0) {
+              <div class="empty-state">El trámite aún no tiene etapas definidas</div>
+            }
           </div>
 
           <!-- Info general -->
@@ -227,34 +243,48 @@ import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.comp
     .progreso-steps {
       display: flex; align-items: flex-start; gap: 0;
       overflow-x: auto; padding-bottom: 8px;
+      scrollbar-width: thin;
     }
     .paso {
       display: flex; flex-direction: column; align-items: center;
-      min-width: 120px; position: relative; flex: 1;
+      min-width: 110px; max-width: 140px; position: relative; flex: 1;
     }
     .paso-circle {
       width: 36px; height: 36px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 700; border: 2px solid var(--border-2);
       background: var(--bg-2); color: var(--text-muted); z-index: 1;
-      transition: all 0.3s;
+      transition: all 0.35s cubic-bezier(.4,0,.2,1);
     }
     .paso-completado .paso-circle {
       background: var(--success); border-color: var(--success); color: white;
+      box-shadow: 0 0 0 3px hsl(142,60%,38%,0.18);
     }
     .paso-actual .paso-circle {
       background: var(--primary); border-color: var(--primary); color: white;
-      box-shadow: 0 0 0 4px hsl(216,85%,50%,0.2);
+      box-shadow: 0 0 0 4px hsl(216,85%,50%,0.22);
+      animation: pulse-ring 1.8s ease-in-out infinite;
+    }
+    .paso-especial .paso-circle {
+      background: var(--bg-3, #2a2a3a); border-color: var(--warning, #f59e0b);
+      color: var(--warning, #f59e0b);
+    }
+    @keyframes pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 4px hsl(216,85%,50%,0.22); }
+      50%        { box-shadow: 0 0 0 8px hsl(216,85%,50%,0.08); }
     }
     .paso-info { text-align: center; margin-top: 8px; }
     .paso-nombre { font-size: 11px; font-weight: 600; margin: 0 0 2px; }
-    .paso-dept { font-size: 10px; color: var(--text-muted); margin: 0; }
-    .paso-fecha { font-size: 10px; color: var(--text-faint); margin: 2px 0 0; }
+    .paso-dept   { font-size: 10px; color: var(--text-muted); margin: 0; }
+    .paso-fecha  { font-size: 10px; color: var(--text-faint); margin: 2px 0 0; }
+    .paso-dur    { font-size: 10px; color: var(--primary); margin: 0; }
     .paso-linea {
       position: absolute; top: 18px; left: 50%; width: 100%;
       height: 2px; background: var(--border-2); z-index: 0;
+      transition: background 0.35s;
     }
-    .linea-completada { background: var(--success); }
+    .linea-completada { background: var(--success) !important; }
+    .linea-actual     { background: linear-gradient(90deg, var(--success) 0%, var(--primary) 100%) !important; }
 
     /* Info grid */
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -292,8 +322,9 @@ import { SidebarComponent, NavItem } from '../../components/sidebar/sidebar.comp
 })
 export class TramiteDetalleComponent implements OnInit, OnDestroy {
   tramite: Tramite | null = null;
+  politica: Politica | null = null;
   loading = true;
-  pasos: any[] = [];
+  pasos: PasoProgreso[] = [];
   objectKeys = Object.keys;
 
   navItems: NavItem[] = [
@@ -306,6 +337,7 @@ export class TramiteDetalleComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private tramiteService: TramiteService,
+    private politicaService: PoliticaService,
     private wsService: WebSocketService,
     private authService: AuthService,
     public router: Router
@@ -324,31 +356,69 @@ export class TramiteDetalleComponent implements OnInit, OnDestroy {
   cargarTramite(id: string): void {
     this.tramiteService.getById(id).pipe(catchError(() => of(null))).subscribe(t => {
       this.tramite = t;
-      if (t) this.construirPasos(t);
+      if (t) {
+        // Cargar la politica para obtener TODOS los nodos del flujo (CU-15)
+        this.politicaService.getById(t.politicaId)
+          .pipe(catchError(() => of(null)))
+          .subscribe(p => {
+            this.politica = p;
+            this.construirPasos(t, p);
+          });
+      }
       this.loading = false;
     });
   }
 
-  construirPasos(t: Tramite): void {
-    const completados = t.historial.map(h => ({
-      nodoId: h.nodoId,
-      nombre: h.nombreNodo,
-      departamento: h.departamento || '',
-      completado: true,
-      actual: false,
-      fecha: h.fecha
-    }));
+  /**
+   * Construye la lista de pasos del progreso visual (CU-15).
+   *
+   * Si se dispone de la Política, usa sus nodos para mostrar el flujo COMPLETO
+   * (completados + actual + pendientes). Si no, solo muestra los completados del historial.
+   *
+   * Se filtran nodos START/END/PARALLEL/JOIN para mostrar únicamente
+   * las etapas de trabajo significativas (TASK y DECISION).
+   */
+  construirPasos(t: Tramite, p: Politica | null): void {
+    // Mapa de historial por nodoId para acceso O(1)
+    const historialMap = new Map(t.historial.map(h => [h.nodoId, h]));
 
-    const actual = t.estado === 'EN_PROCESO' ? [{
-      nodoId: t.nodoActualId,
-      nombre: t.nombreNodoActual || 'En proceso',
-      departamento: t.departamentoActual || '',
-      completado: false,
-      actual: true,
-      fecha: null
-    }] : [];
+    if (p?.nodos?.length) {
+      // Ordenar nodos de trabajo (excluir START/END/PARALLEL/JOIN)
+      const nodosTrabajo = p.nodos.filter(
+        n => n.tipo === 'TASK' || n.tipo === 'DECISION'
+      );
 
-    this.pasos = [...completados, ...actual];
+      this.pasos = nodosTrabajo.map(nodo => {
+        const hist = historialMap.get(nodo.id);
+        const esActual = nodo.id === t.nodoActualId;
+        return {
+          nodoId:          nodo.id,
+          nombre:          nodo.nombre,
+          departamento:    nodo.departamento || '',
+          completado:      !!hist,
+          actual:          esActual && !hist,
+          esEspecial:      nodo.tipo === 'DECISION',
+          fecha:           hist?.fecha ?? null,
+          duracionMinutos: hist?.duracionMinutos ?? null
+        } as PasoProgreso;
+      });
+    } else {
+      // Fallback: solo historial completado + nodo actual
+      const completados = t.historial.map(h => ({
+        nodoId: h.nodoId, nombre: h.nombreNodo,
+        departamento: h.departamento || '', completado: true,
+        actual: false, esEspecial: false,
+        fecha: h.fecha, duracionMinutos: h.duracionMinutos ?? null
+      } as PasoProgreso));
+
+      const actual: PasoProgreso[] = t.estado === 'EN_PROCESO' ? [{
+        nodoId: t.nodoActualId, nombre: t.nombreNodoActual || 'En proceso',
+        departamento: t.departamentoActual || '', completado: false,
+        actual: true, esEspecial: false, fecha: null, duracionMinutos: null
+      }] : [];
+
+      this.pasos = [...completados, ...actual];
+    }
   }
 
   descargarPdf(): void {
@@ -385,4 +455,22 @@ export class TramiteDetalleComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.wsSub) this.wsSub.unsubscribe();
   }
+}
+
+/**
+ * Representa un paso en la visualización del progreso del trámite (CU-15).
+ * ISP: interfaz pequeña y específica para este componente.
+ */
+interface PasoProgreso {
+  nodoId: string;
+  nombre: string;
+  departamento: string;
+  /** El paso ya fue completado (aparece en el historial) */
+  completado: boolean;
+  /** Es el nodo donde está actualmente el trámite */
+  actual: boolean;
+  /** Es un nodo DECISION — se muestra con icono especial */
+  esEspecial: boolean;
+  fecha: string | null;
+  duracionMinutos: number | null;
 }

@@ -11,6 +11,18 @@ export interface NavItem {
   badge?: number;
 }
 
+export const ADMIN_NAV_ITEMS: NavItem[] = [
+  { icon: 'ph ph-squares-four', label: 'Panel Principal', route: '/admin' },
+  { icon: 'ph ph-briefcase', label: 'Políticas', route: '/admin/politicas' },
+  { icon: 'ph ph-files', label: 'Trámites', route: '/admin/tramites' },
+  { icon: 'ph ph-chart-line-up', label: 'Reportes IA', route: '/admin/reportes' },
+  { icon: 'ph ph-trend-up', label: 'Analytics & KPIs', route: '/analytics' },
+  { icon: 'ph ph-warning-circle', label: 'Cuellos de Botella', route: '/admin/cuellos-botella' },
+  { icon: 'ph ph-pen-nib', label: 'Editor de Políticas', route: '/editor' },
+  { icon: 'ph ph-users', label: 'Usuarios', route: '/users' },
+  { icon: 'ph ph-user-circle', label: 'Mi Perfil', route: '/perfil' },
+];
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
@@ -19,17 +31,21 @@ export interface NavItem {
   template: `
     <nav class="wf-sidebar">
       <div class="wf-logo">
-        <div class="wf-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-            <rect x="4" y="4" width="16" height="16" rx="2"/>
-            <rect x="9" y="9" width="6" height="6"/>
-            <line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/>
-            <line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/>
-            <line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/>
-            <line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/>
+        <div class="wf-logo-icon" style="background: transparent;">
+          <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="url(#brandGrad)"/>
+            <path d="M12 20L20 12L28 20L20 28L12 20Z" fill="white" fill-opacity="0.2"/>
+            <circle cx="20" cy="20" r="4" fill="white"/>
+            <path d="M8 20H12M28 20H32M20 8V12M20 28V32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="brandGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#3b82f6"/>
+                <stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
           </svg>
         </div>
-        <span class="wf-logo-text">WorkEntAI</span>
+        <span class="wf-logo-text" style="font-size: 18px;">WorkEntAI</span>
       </div>
 
       <p class="wf-nav-label">NAVEGACIÓN</p>
@@ -37,7 +53,7 @@ export interface NavItem {
         @for (item of navItems; track item.route) {
           <li class="wf-nav-item" [class.active]="activeRoute === item.route"
               (click)="router.navigate([item.route])">
-            <span class="wf-nav-icon">{{ item.icon }}</span>
+            <i class="wf-nav-icon" [ngClass]="item.icon"></i>
             <span class="wf-nav-text">{{ item.label }}</span>
             @if (item.badge && item.badge > 0) {
               <span class="wf-nav-badge">{{ item.badge }}</span>
@@ -57,9 +73,9 @@ export interface NavItem {
         <div class="wf-footer-actions">
           <button class="wf-theme-btn" (click)="toggleTheme()"
             [title]="isDark() ? 'Modo claro' : 'Modo oscuro'">
-            {{ isDark() ? '☀️' : '🌙' }}
+            <i [class]="isDark() ? 'ph ph-sun' : 'ph ph-moon'"></i>
           </button>
-          <button class="wf-logout-btn" (click)="logout()">🚪 Salir</button>
+          <button class="wf-logout-btn" (click)="logout()"><i class="ph ph-sign-out"></i> Salir</button>
         </div>
       </div>
     </nav>
@@ -163,6 +179,33 @@ export interface NavItem {
     @media (max-width: 600px) {
       .wf-sidebar { display: none; }
     }
+    
+    /* ========================================= */
+    /* LIGHT THEME OVERRIDES                     */
+    /* ========================================= */
+    :host-context([data-theme="light"]) .wf-sidebar {
+      background: #f8fafc;
+      border-right-color: rgba(0,0,0,0.06);
+    }
+    :host-context([data-theme="light"]) .wf-logo-text { color: #1e293b; }
+    :host-context([data-theme="light"]) .wf-nav-label { color: #94a3b8; }
+    :host-context([data-theme="light"]) .wf-nav-item { color: #64748b; }
+    :host-context([data-theme="light"]) .wf-nav-item:hover { background: rgba(0,0,0,0.04); color: #0f172a; }
+    :host-context([data-theme="light"]) .wf-nav-item.active { background: rgba(59,130,246,0.1); color: #2563eb; font-weight: 600; }
+    
+    :host-context([data-theme="light"]) .wf-user-card { background: rgba(0,0,0,0.03); }
+    :host-context([data-theme="light"]) .wf-user-name { color: #1e293b; }
+    :host-context([data-theme="light"]) .wf-user-role { color: #64748b; }
+    
+    :host-context([data-theme="light"]) .wf-theme-btn { 
+      background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.05); color: #475569;
+    }
+    :host-context([data-theme="light"]) .wf-theme-btn:hover { background: rgba(0,0,0,0.08); }
+    
+    :host-context([data-theme="light"]) .wf-logout-btn { 
+      border-color: rgba(0,0,0,0.1); color: #64748b; 
+    }
+    :host-context([data-theme="light"]) .wf-logout-btn:hover { border-color: #ef4444; color: #ef4444; }
   `]
 })
 export class SidebarComponent {

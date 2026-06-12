@@ -127,19 +127,23 @@ export class PerfilComponent implements OnInit {
     const rol = this.user?.rol;
     if (rol === 'ADMIN') {
       this.navItems = [
-        { icon: '📊', label: 'Panel Principal', route: '/admin' },
-        { icon: '✏️', label: 'Editor', route: '/editor' },
-        { icon: '👤', label: 'Mi Perfil', route: '/perfil' },
+        { icon: 'ph ph-squares-four', label: 'Panel Principal', route: '/admin' },
+        { icon: 'ph ph-briefcase', label: 'Políticas', route: '/admin/politicas' },
+        { icon: 'ph ph-files', label: 'Trámites', route: '/admin/tramites' },
+        { icon: 'ph ph-chart-line-up', label: 'Reportes IA', route: '/admin/reportes' },
+        { icon: 'ph ph-pen-nib', label: 'Editor de Políticas', route: '/editor' },
+        { icon: 'ph ph-users', label: 'Usuarios', route: '/users' },
+        { icon: 'ph ph-user-circle', label: 'Mi Perfil', route: '/perfil' },
       ];
     } else if (rol === 'FUNCIONARIO') {
       this.navItems = [
-        { icon: '📋', label: 'Mis Tareas', route: '/dashboard' },
-        { icon: '👤', label: 'Mi Perfil', route: '/perfil' },
+        { icon: 'ph ph-kanban', label: 'Mis Tareas', route: '/dashboard' },
+        { icon: 'ph ph-user', label: 'Mi Perfil', route: '/perfil' },
       ];
     } else {
       this.navItems = [
-        { icon: '🏠', label: 'Portal', route: '/cliente' },
-        { icon: '👤', label: 'Mi Perfil', route: '/perfil' },
+        { icon: 'ph ph-folder-open', label: 'Trámites', route: '/cliente' },
+        { icon: 'ph ph-user', label: 'Mi Perfil', route: '/perfil' }
       ];
     }
   }

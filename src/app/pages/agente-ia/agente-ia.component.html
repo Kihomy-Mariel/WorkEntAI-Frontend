@@ -1,0 +1,170 @@
+<div class="chat-layout">
+  
+  <!-- Main Chat Area -->
+  <main class="chat-main">
+    <header class="chat-header">
+      <div class="header-content">
+        <button class="btn-back" (click)="irAMisTramites()" title="Volver">
+          <i class="ph ph-arrow-left text-xl"></i>
+        </button>
+        
+        <div class="bot-info">
+          <div class="bot-avatar"><i class="ph ph-sparkle text-white"></i></div>
+          <div>
+            <h1 class="bot-name">Asistente IA</h1>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-outline-sm" (click)="toggleSidebar()" [class.active]="!sidebarHidden" title="Ver Contexto del Trámite">
+            <i class="ph ph-sidebar-simple text-lg"></i>
+          </button>
+          <button class="btn-outline-sm" (click)="nuevaSesion()" title="Nuevo Chat">
+            <i class="ph ph-plus text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="chat-messages" #mensajesContainer>
+      @if (cargando && !sesion) {
+        <div class="msg-row bot">
+          <div class="msg-avatar"><i class="ph ph-sparkle text-white"></i></div>
+          <div class="msg-bubble-wrap">
+            <div class="msg-bubble loading">
+              <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @for (msg of todosLosMensajes; track $index) {
+        <div class="msg-row" [class.user]="msg.rol === 'CLIENTE'" [class.bot]="msg.rol === 'AGENTE'">
+          @if (msg.rol === 'AGENTE') { 
+            <div class="msg-avatar"><i class="ph ph-sparkle text-white"></i></div> 
+          }
+          
+          <div class="msg-bubble-wrap">
+            <div class="msg-bubble" [innerHTML]="formatearContenido(msg.contenido)"></div>
+          </div>
+
+          @if (msg.rol === 'CLIENTE') { 
+            <div class="msg-avatar user-av">
+              <i class="ph ph-user"></i>
+            </div> 
+          }
+        </div>
+      }
+
+      @if (enviando) {
+        <div class="msg-row bot">
+          <div class="msg-avatar"><i class="ph ph-sparkle text-white"></i></div>
+          <div class="msg-bubble-wrap">
+            <div class="msg-bubble loading">
+              <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+            </div>
+          </div>
+        </div>
+      }
+      
+      @if (sesion?.fase === 'CONFIRMACION') {
+        <div class="complete-banner">
+          <div class="cb-icon"><i class="ph ph-check-circle" style="color: #10b981;"></i></div>
+          <div class="cb-text">
+            <strong>¡Requisitos Completados!</strong><br>¿Deseas iniciar este trámite formalmente ahora?
+          </div>
+          <button class="cb-btn" (click)="confirmarTramite()">Iniciar Trámite</button>
+        </div>
+      }
+      @if (estaCompleta) {
+        <div class="complete-banner">
+          <div class="cb-icon"><i class="ph ph-confetti" style="color: #f59e0b;"></i></div>
+          <div class="cb-text">
+            <strong>¡Trámite Iniciado Exitosamente!</strong><br>Tu trámite ya ha sido creado en el sistema.
+          </div>
+          <button class="cb-btn" (click)="irAMisTramites()">Ir a mis trámites</button>
+        </div>
+      }
+    </div>
+
+    <footer class="chat-footer">
+      @if (error) { <div class="toast-error">{{ error }}</div> }
+      
+      <div class="input-container" [class.disabled]="estaCompleta">
+        <button class="btn-icon" title="Adjuntar documento" [disabled]="estaCompleta" (click)="fileInput.click()">
+          <i class="ph ph-paperclip text-lg"></i>
+        </button>
+        <input type="file" #fileInput hidden (change)="onFileSelected($event)" accept=".pdf,.png,.jpg,.jpeg" />
+        
+        <textarea class="chat-input" [(ngModel)]="mensajeInput" (keydown)="onKeydown($event)"
+          placeholder="Envía un mensaje al Agente IA..." rows="1" [disabled]="estaCompleta"></textarea>
+        
+        <button class="btn-icon" [class.recording]="isRecording" (click)="toggleVoice()" [disabled]="estaCompleta" title="Mensaje de voz">
+          <i class="ph ph-microphone text-lg"></i>
+          @if (isRecording) { <span class="mic-waves"></span> }
+        </button>
+
+        <button class="btn-send" (click)="enviarMensaje()" [disabled]="estaCompleta || (!mensajeInput.trim() && !fileAttached) || enviando">
+          <i class="ph ph-paper-plane-tilt"></i>
+        </button>
+      </div>
+      
+      @if (fileAttached) {
+        <div class="attachment-preview">
+          <i class="ph ph-file-text text-lg" style="color: #3b82f6;"></i>
+          <span>{{ fileAttached.name }}</span>
+          <button class="btn-remove" (click)="fileAttached = null"><i class="ph ph-x"></i></button>
+        </div>
+      }
+      
+      <div style="font-size: 11px; color: #94a3b8; margin-top: 12px;">El Agente IA puede cometer errores. Verifica la información importante.</div>
+    </footer>
+  </main>
+
+  <!-- Context Sidebar (Right) -->
+  <aside class="context-sidebar" [class.hidden]="sidebarHidden || !sesion?.politicaId">
+    <div class="sidebar-header">
+      <div class="icon-wrap"><i class="ph ph-clipboard-text"></i></div>
+      <h3 class="stitle">Contexto del Trámite</h3>
+    </div>
+    
+    <div class="sidebar-body">
+      @if (sesion?.nombrePolitica) {
+        <div class="info-block">
+          <span class="ilabel">Trámite Identificado</span>
+          <span class="ivalue">{{ sesion!.nombrePolitica }}</span>
+        </div>
+      }
+      
+      <div class="info-block">
+        <span class="ilabel">Estado Actual</span>
+        <span class="badge" [ngClass]="getBadgeClass(sesion?.fase || 'IDENTIFICACION')">
+          {{ faseLegible(sesion?.fase || 'IDENTIFICACION') }}
+        </span>
+      </div>
+
+      @if (sesion?.requisitosFaltantes && sesion!.requisitosFaltantes!.length > 0) {
+        <div class="info-block">
+          <span class="ilabel">Requisitos Pendientes</span>
+          <ul class="req-list">
+            @for (req of sesion!.requisitosFaltantes; track req) {
+              <li><i class="ph ph-circle req-dot pending"></i> {{ req }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (sesion?.requisitosExtraidos && (sesion!.requisitosExtraidos | keyvalue)?.length) {
+        <div class="info-block">
+          <span class="ilabel">Datos Extraídos</span>
+          <ul class="req-list">
+            @for (req of sesion!.requisitosExtraidos | keyvalue; track req.key) {
+              <li><i class="ph ph-check-circle req-dot done"></i> <div><strong>{{ req.key }}:</strong> {{ req.value }}</div></li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  </aside>
+
+</div>

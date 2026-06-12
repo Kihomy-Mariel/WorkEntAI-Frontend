@@ -21,12 +21,10 @@ import { AuthService } from '../../services/auth/auth.service';
         <!-- Logo / Brand -->
         <div class="brand">
           <div class="brand-icon">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
-              <line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/>
-              <line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/>
-              <line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/>
-              <line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/>
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 20L20 12L28 20L20 28L12 20Z" fill="white" fill-opacity="0.3"/>
+              <circle cx="20" cy="20" r="4" fill="white"/>
+              <path d="M8 20H12M28 20H32M20 8V12M20 28V32" stroke="white" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </div>
           <h1 class="brand-name">WorkEntAI</h1>

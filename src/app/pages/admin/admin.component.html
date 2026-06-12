@@ -1,0 +1,415 @@
+<div class="admin-layout">
+  <app-sidebar [activeRoute]="'/admin'" [navItems]="navItems"></app-sidebar>
+  <div class="admin-main">
+
+    <!-- HERO HEADER -->
+    <div class="hero-header">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">Buenos días, {{ user?.nombre || 'Administrador' }}</h1>
+        <p class="hero-sub">Aquí tienes el resumen gerencial y el estado de los workflows al día de hoy.</p>
+      </div>
+      <div class="hero-actions" style="display: flex; gap: 8px; align-items: center;">
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 4px; display: flex; gap: 4px; backdrop-filter: blur(10px);">
+          <button class="btn-glass" style="border: none; background: transparent; padding: 8px 12px; font-weight: 500;" (click)="router.navigate(['/editor'])" title="Diseñar Flujo">
+            <i class="ph ph-pen-nib text-lg" style="margin-right: 6px; color: #3b82f6;"></i> Nuevo Flujo
+          </button>
+          <button class="btn-glass" style="border: none; background: transparent; padding: 8px 12px; font-weight: 500;" (click)="router.navigate(['/admin/politicas'])" title="Políticas">
+            <i class="ph ph-briefcase text-lg" style="margin-right: 6px; color: #10b981;"></i> Políticas
+          </button>
+          <button class="btn-glass" style="border: none; background: transparent; padding: 8px 12px; font-weight: 500;" (click)="router.navigate(['/admin/reportes'])" title="Reportes">
+            <i class="ph ph-chart-line-up text-lg" style="margin-right: 6px; color: #f59e0b;"></i> Reportes
+          </button>
+          <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 6px;"></div>
+          
+          <div class="notif-wrap" style="position: relative;">
+            <button class="btn-glass" style="border: none; background: transparent; padding: 8px 12px; font-weight: 500; position: relative;" (click)="toggleNotifPanel()" title="Notificaciones">
+              <i class="ph ph-bell text-lg" style="color: #f59e0b;"></i>
+              @if (notificaciones.length > 0) {
+                <span class="notif-badge" style="position: absolute; top: 0; right: 4px; background: #ef4444; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold;">{{ notificaciones.length }}</span>
+              }
+            </button>
+
+            @if (showNotifs) {
+              <div class="notif-panel glass-card" (click)="$event.stopPropagation()" style="position: absolute; right: 0; top: 50px; width: 320px; z-index: 100; padding: 16px;">
+                <div class="card-header" style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+                  <h3 class="card-title text-sm"><i class="ph ph-bell-ringing"></i> Notificaciones</h3>
+                  @if (notificaciones.length > 0) {
+                    <button class="btn-sm" style="background: transparent; color: #3b82f6; border: none; cursor: pointer; font-size: 11px;" (click)="marcarTodasLeidas()">Limpiar</button>
+                  }
+                </div>
+                <div class="notifications-list" style="max-height: 300px; overflow-y: auto;">
+                  @for (n of notificaciones; track n.id) {
+                    <div class="notif-item" (click)="marcarLeida(n.id)" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; cursor: pointer; background: #f1f5f9; border-radius: 8px; margin-bottom: 4px;">
+                      <div class="icon-box" style="width: 24px; height: 24px; font-size: 12px; background: rgba(59,130,246,0.1); color: #3b82f6;"><i class="ph ph-info"></i></div>
+                      <span class="notif-text" style="font-size: 12px; color: #1e3a8a; font-weight: 600; line-height: 1.4;">{{ n.mensaje }}</span>
+                    </div>
+                  }
+                  @if (notificaciones.length === 0) {
+                    <div class="empty-state sm" style="padding: 20px 10px;">
+                      <div class="empty-icon" style="font-size: 24px;"><i class="ph ph-bell-slash"></i></div>
+                      <p>Todo al día</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          
+          <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 6px;"></div>
+          <button class="btn-glass" style="border: none; background: transparent; padding: 8px 12px;" (click)="loadData()" [disabled]="loading" title="Sincronizar">
+            @if(loading) { <i class="ph ph-spinner ph-spin text-lg" style="color: #64748b;"></i> } 
+            @else { <i class="ph ph-arrows-clockwise text-lg" style="color: #64748b;"></i> }
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="admin-content">
+
+      @if (loading) {
+        <div class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Sincronizando información...</p>
+        </div>
+      } @else {
+        
+        <!-- BENTO GRID KPIS -->
+        <div class="bento-grid">
+          
+          <!-- KPI: Trámites Completados (Main) -->
+          <div class="bento-card kpi-main">
+            <div class="kpi-header">
+              <h3>Trámites Finalizados</h3>
+              <div class="kpi-icon icon-emerald"><i class="ph ph-check-circle"></i></div>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value">{{ tramitesCompletados }}</div>
+              <div class="kpi-trend positive"><i class="ph ph-trend-up"></i> +12% este mes</div>
+            </div>
+          </div>
+
+          <!-- KPI: Eficiencia Global -->
+          <div class="bento-card kpi-secondary">
+            <div class="kpi-header">
+              <h3>Eficiencia Global</h3>
+              <div class="kpi-icon icon-cyan"><i class="ph ph-lightning"></i></div>
+            </div>
+            <div class="kpi-body row-center">
+              <div class="kpi-value">{{ kpiEficiencia }}<span class="pct">%</span></div>
+              <div class="progress-ring-container">
+                <svg viewBox="0 0 36 36" class="circular-chart cyan">
+                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path class="circle" [attr.stroke-dasharray]="kpiEficiencia + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- LINE CHART: Tendencia -->
+          <div class="bento-card kpi-chart span-2">
+            <div class="kpi-header">
+              <h3>Evolución de Trámites</h3>
+            </div>
+            <div class="chart-wrapper">
+              <canvas baseChart 
+                [data]="trendData" 
+                [options]="lineChartOptions" 
+                [type]="'line'">
+              </canvas>
+            </div>
+          </div>
+
+          <!-- DOUGHNUT CHART: Estado -->
+          <div class="bento-card kpi-chart span-2">
+            <div class="kpi-header">
+              <h3>Distribución de Estados</h3>
+            </div>
+            <div class="chart-wrapper">
+              <canvas baseChart 
+                [data]="estadoTramitesData" 
+                [options]="chartOptions" 
+                [type]="'doughnut'">
+              </canvas>
+            </div>
+          </div>
+
+          <!-- BAR CHART: Carga por Área -->
+          <div class="bento-card kpi-chart span-2">
+            <div class="kpi-header">
+              <h3>Carga de Trabajo</h3>
+            </div>
+            <div class="chart-wrapper">
+              <canvas baseChart 
+                [data]="barData" 
+                [options]="barChartOptions" 
+                [type]="'bar'">
+              </canvas>
+            </div>
+          </div>
+
+        </div> <!-- END BENTO GRID -->
+
+        <!-- DASHBOARD PANELS (2 Columns) -->
+        <div class="dashboard-panels">
+          
+          <!-- PANEL IZQUIERDO: Políticas -->
+          <div class="panel-main">
+            <div class="glass-card">
+              <div class="card-header">
+                <h2 class="card-title">Directorio de Políticas</h2>
+                <div class="card-actions">
+                  <button class="btn-sm btn-glass" (click)="router.navigate(['/editor'])"><i class="ph ph-plus"></i> Nuevo</button>
+                </div>
+              </div>
+              
+              @if (politicas.length === 0) {
+                <div class="empty-state">
+                  <div class="empty-icon"><i class="ph ph-folder-open"></i></div>
+                  <p>No hay flujos registrados aún.</p>
+                </div>
+              } @else {
+                <div class="table-container">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Política</th>
+                        <th>Estado</th>
+                        <th>Categoría</th>
+                        <th>Métricas</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of politicas; track p.id) {
+                        <tr>
+                          <td>
+                            <div class="cell-title">{{ p.nombre }}</div>
+                            <div class="cell-sub" style="font-size: 10px;">Creada: {{ p.fechaCreacion | date:'dd/MM/yy' }}</div>
+                          </td>
+                          <td><span class="badge" [class]="badgeClass(p.estado)">{{ p.estado }}</span></td>
+                          <td><span class="category-tag"><i class="ph ph-tag"></i> {{ p.categoria || 'General' }}</span></td>
+                          <td>
+                            <div style="display: flex; gap: 10px; font-size: 11px; color: #94a3b8;">
+                              <span title="Trámites en curso"><i class="ph ph-activity" style="color: #3b82f6;"></i> {{ p.tramitesActivos || 0 }}</span>
+                              <span title="Completados"><i class="ph ph-check-circle" style="color: #10b981;"></i> {{ p.tramitesCompletados || 0 }}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <div class="action-btns" style="display: flex; gap: 8px;">
+                              <button class="btn-icon" (click)="verDiagrama(p)" title="Ver Mapa"><i class="ph ph-eye"></i></button>
+                              <button class="btn-icon" (click)="router.navigate(['/editor', p.id])" title="Editar Flujo"><i class="ph ph-pencil-simple"></i></button>
+                              @if (p.estado !== 'ACTIVA') {
+                                <button class="btn-icon success" (click)="activarPolitica(p.id, p.nombre)" [disabled]="actionLoading[p.id]" title="Activar">
+                                  @if(actionLoading[p.id]){ <i class="ph ph-spinner ph-spin"></i> } @else { <i class="ph ph-check"></i> }
+                                </button>
+                              }
+                              <button class="btn-icon ai" (click)="analizarIA(p.id, p.nombre)" [disabled]="actionLoading['ai_'+p.id]" title="Analizar IA">
+                                @if(actionLoading['ai_'+p.id]){ <i class="ph ph-spinner ph-spin"></i> } @else { <i class="ph ph-brain"></i> }
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <!-- RESULTADOS IA -->
+            @if (aiResult) {
+              <div class="glass-card ai-result-card animate-up">
+                <div class="card-header ai-header">
+                  <h2 class="card-title"><i class="ph ph-sparkle"></i> Insights de IA para: {{ aiPoliticaNombre }}</h2>
+                  <button class="btn-icon" (click)="aiResult = null"><i class="ph ph-x"></i></button>
+                </div>
+                <div class="ai-stats-row">
+                  <div class="ai-stat">
+                    <span class="ai-stat-val">{{ aiResult.totalTareas }}</span>
+                    <span class="ai-stat-lbl">Tareas</span>
+                  </div>
+                  <div class="ai-stat">
+                    <span class="ai-stat-val">{{ aiResult.promedioMinutos | number:'1.0-0' }}m</span>
+                    <span class="ai-stat-lbl">Promedio</span>
+                  </div>
+                </div>
+                <div class="ai-recommendation">
+                  <strong>Recomendación:</strong> {{ aiResult.recomendacion }}
+                </div>
+                @if (aiResult.cuellos.length > 0) {
+                  <div class="ai-bottlenecks">
+                    <h4>Cuellos de botella detectados:</h4>
+                    <ul>
+                      @for (c of aiResult.cuellos; track c.nodo) {
+                        <li>
+                          <span class="nodo-name">{{ c.nodo }}</span>
+                          <span class="exceso">+{{ c.excesoPct | number:'1.0-0' }}% tiempo</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- TRÁMITES RECIENTES -->
+            <div class="glass-card mt-4">
+              <div class="card-header">
+                <h2 class="card-title">Trámites Recientes</h2>
+                <div class="card-actions">
+                  <button class="btn-sm btn-outline-glass" (click)="router.navigate(['/admin/tramites'])">Ver Todos <i class="ph ph-arrow-right"></i></button>
+                </div>
+              </div>
+              
+              @if (tramites.length === 0) {
+                <div class="empty-state">
+                  <div class="empty-icon"><i class="ph ph-files"></i></div>
+                  <p>No hay trámites en ejecución.</p>
+                </div>
+              } @else {
+                <div class="table-container">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Referencia</th>
+                        <th>Cliente</th>
+                        <th>Inicio</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (t of tramites.slice(0, 5); track t.id) {
+                        <tr>
+                          <td>
+                            <div class="cell-title">{{ t.numeroReferencia || t.id.slice(0, 8) }}</div>
+                            <div class="cell-sub" style="font-size: 10px;">ID: {{ t.id | slice:0:6 }}...</div>
+                          </td>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                              <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(59,130,246,0.2);">
+                                {{ (t.nombreCliente || t.clienteId).charAt(0).toUpperCase() }}
+                              </div>
+                              <div style="display: flex; flex-direction: column;">
+                                <span class="cell-title" style="font-size: 13px; font-weight: 600;">{{ (t.nombreCliente || t.clienteId).split(' ')[0] }} {{ (t.nombreCliente || t.clienteId).split(' ')[1] || '' }}</span>
+                                <span class="cell-sub" style="font-size: 10px; opacity: 0.8;">{{ (t.nombreCliente || 'user').toLowerCase().split(' ').join('.') }}@empresa.com</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div class="cell-title" style="font-size: 13px;">{{ t.fechaInicio | date:'dd MMM, yyyy' }}</div>
+                            <div class="cell-sub" style="font-size: 10px;">{{ t.fechaInicio | date:'HH:mm' }}</div>
+                          </td>
+                          <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                              <span class="badge" [class]="badgeTramite(t.estado)">{{ t.estado }}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+          </div>
+
+          <!-- PANEL DERECHO: Notificaciones y Actividad -->
+          <div class="panel-side">
+            <div class="glass-card">
+              <div class="card-header">
+                <h2 class="card-title">Centro de Alertas</h2>
+                <div class="card-actions">
+                  <button class="btn-sm btn-outline-glass" (click)="marcarTodasLeidas()"><i class="ph ph-checks"></i> Leídas</button>
+                </div>
+              </div>
+              
+              <div class="notifications-list">
+                @if (notificaciones.length === 0) {
+                  <div class="empty-state sm">
+                    <div class="empty-icon"><i class="ph ph-bell-slash"></i></div>
+                    <p>Todo al día. No hay alertas.</p>
+                  </div>
+                } @else {
+                  @for (n of notificaciones; track n.id) {
+                    <div class="notif-item">
+                      <div class="notif-indicator unread"></div>
+                      <div class="notif-content">
+                        <p class="notif-text">{{ n.mensaje }}</p>
+                        <span class="notif-time">{{ n.fechaCreacion | date:'short' }}</span>
+                      </div>
+                      <button class="btn-icon sm" (click)="marcarLeida(n.id)"><i class="ph ph-x"></i></button>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+            
+
+          </div>
+        </div>
+
+      }
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container">
+  @for (toast of toasts; track toast.id) {
+    <div class="toast" [class]="'toast-' + toast.type">
+      {{ toast.message }}
+    </div>
+  }
+</div>
+
+<!-- MODAL DIAGRAMA -->
+@if (showDiagramaModal && politicaVisualizando) {
+  <div class="modal-overlay glass" (click)="cerrarDiagrama()">
+    <div class="modal-diagrama glass-panel" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title"><i class="ph ph-projector-screen-chart"></i> {{ politicaVisualizando.nombre }}</h2>
+          <p class="modal-sub">
+            <span class="badge" [class]="badgeClass(politicaVisualizando.estado)">{{ politicaVisualizando.estado }}</span>
+            &nbsp;· v{{ politicaVisualizando.version }}
+          </p>
+        </div>
+        <div class="modal-actions-header">
+          <button class="btn-sm btn-glass primary" (click)="router.navigate(['/editor', politicaVisualizando.id]); cerrarDiagrama()">
+            <i class="ph ph-pencil-simple"></i> Editar
+          </button>
+          <button class="btn-sm btn-glass" (click)="cerrarDiagrama()"><i class="ph ph-x"></i></button>
+        </div>
+      </div>
+      <div class="diagrama-container">
+        @if (!politicaVisualizando.nodos || politicaVisualizando.nodos.length === 0) {
+          <div class="empty-state">Sin nodos definidos.</div>
+        } @else {
+          <div class="swimlanes-wrapper">
+            @for (lane of getSwimlanes(politicaVisualizando.nodos); track lane.dept) {
+              <div class="swimlane">
+                <div class="swimlane-header">
+                  <span class="swimlane-dept">{{ lane.dept }}</span>
+                  <span class="swimlane-count">{{ lane.nodos.length }} nodos</span>
+                </div>
+                <div class="swimlane-body">
+                  @for (nodo of lane.nodos; track nodo.id) {
+                    <div class="nodo-card" [class]="'nodo-' + nodo.tipo.toLowerCase()">
+                      <div class="nodo-info">
+                        <p class="nodo-nombre">{{ nodo.nombre }}</p>
+                        @if(nodo.descripcion){ <p class="nodo-desc">{{ nodo.descripcion }}</p> }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
