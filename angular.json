@@ -36,6 +36,26 @@
             ],
             "styles": [
               "src/styles.scss"
+            ],
+            "externalDependencies": [
+              "jsdom",
+              "canvas",
+              "path",
+              "fs",
+              "events",
+              "net",
+              "tls",
+              "assert",
+              "url",
+              "http",
+              "https",
+              "stream",
+              "zlib",
+              "util",
+              "os",
+              "child_process",
+              "string_decoder",
+              "buffer"
             ]
           },
           "configurations": {
